@@ -1,0 +1,17 @@
+1. Login API:
+Endpoint: /api/login/
+Description: Authenticates the member using username/email and password.
+2. Update Profile API:
+Endpoint: /api/members/update/
+Description: Allows a member to update personal data like phone number, Facebook, Instagram, Gmail, and profile picture.
+3. Set Availability API:
+Endpoint: /api/members/availability/
+Description: Lets members set their availability status (e.g., free/busy).
+4. Member Details API:
+Endpoint: /api/members/details/
+Description: Fetches member details like availability, contact info, etc.
+
+python manage.py makemigrations
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py runserver
