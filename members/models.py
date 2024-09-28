@@ -20,6 +20,10 @@ class Member(AbstractUser):
     profile_pic = models.ImageField(upload_to='profile_pics/', blank=True)
     availability = models.BooleanField(default=True)  # True = available, False = busy
 
+
+    def __str__(self):
+        return self.email  # R
+
     
 class MemberToken(models.Model):
     key = models.CharField(max_length=40, primary_key=True)
