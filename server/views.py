@@ -7,4 +7,4 @@ from rest_framework.permissions import AllowAny,IsAuthenticated
 class HOmepage(APIView):
     permission_classes=[AllowAny]
     def get(self, request):
-        return Response({"message":"Welcome to the Yoga Village API"})
+        return render(request, '../templates/welcome.html')
