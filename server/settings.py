@@ -2,16 +2,17 @@ from pathlib import Path
 from datetime import timedelta
 import os
 import dj_database_url
+from decouple import config
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 
-SECRET_KEY = 'django-insecure-zd5g&*3ak_b^y)x1v)=c^*de3c3$qmkl=@_qtr1qgcdr=2wl$e'
+SECRET_KEY = config("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config("DEBUG",cast=bool)
 
 ALLOWED_HOSTS = ['*']
 
@@ -76,7 +77,7 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-DATABASES['default']= dj_database_url.parse("postgresql://yv_sql_user:eULSbwjg8YOnq3zNYqG5KlLhThEx2iyC@dpg-crrnnnogph6c738iv8kg-a.singapore-postgres.render.com/yv_sql")
+DATABASES['default']= dj_database_url.parse(config("DATABASE_URL"))
 
 
 # Password validation
