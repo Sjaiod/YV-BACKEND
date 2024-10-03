@@ -143,8 +143,11 @@ SIMPLE_JWT = {
 }
 AUTH_USER_MODEL = 'members.Member'
 
-CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_ALL_ORIGINS = True
+
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
-    'https://yv-test.netlify.app/'
+    'https://yv-test.netlify.app/',
+    'https://yv-backend-1.onrender.com'
+
 ]
