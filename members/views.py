@@ -33,7 +33,7 @@ class LoginView(APIView):
 
         if user_obj:
             token, _ = Token.objects.get_or_create(user=user_obj)
-            return Response({'token': token.key}, status=status.HTTP_200_OK)
+            return Response({'token': token.key ,"role":user_obj.role}, status=status.HTTP_200_OK)
         else:
             return Response({"error": "Invalid email or password."}, status=status.HTTP_400_BAD_REQUEST)
 
