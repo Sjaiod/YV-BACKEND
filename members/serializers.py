@@ -10,7 +10,9 @@ from django.contrib.auth import get_user_model
 class MemberSerializer(serializers.ModelSerializer):
     class Meta:
         model = Member
-        fields = ['id', 'email', 'dob', 'nid', 'role']
+        fields = ['id', 'member_name','email', 'role','phone','facebook',
+            'instagram',
+            'gmail',]
         def validate_role(self, value):
             valid_roles = ['gm', 'admin', 'MOD']
             if value not in valid_roles:
