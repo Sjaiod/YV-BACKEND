@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     'members', 
     'whitenoise.runserver_nostatic',
     'corsheaders',
+    'events'
       # your app
 
     
