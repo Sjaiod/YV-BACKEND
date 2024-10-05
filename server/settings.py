@@ -144,4 +144,12 @@ SIMPLE_JWT = {
 }
 AUTH_USER_MODEL = 'members.Member'
 
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "https://yv-test.netlify.app/"
+    # other domains if needed
+]
+
 CORS_ALLOW_ALL_ORIGINS = True
+
+
