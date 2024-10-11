@@ -7,3 +7,4 @@ media/
 test.py
 db.sqlite3
 APIS.txt
+service_account.json
