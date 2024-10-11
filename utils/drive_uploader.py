@@ -69,7 +69,7 @@ import json
 
 # Define scopes and load credentials from the environment variable
 SCOPES = ['https://www.googleapis.com/auth/drive']
-SERVICE_ACCOUNT_FILE = os.path.join(os.path.dirname(__file__), config("GOOGLE_SERVICE_ACCOUNT_JSON"))
+SERVICE_ACCOUNT_FILE = os.path.join(os.path.dirname(__file__), "service_account.json")
 PARENT_FOLDER_ID = "1TP3SO5vfcnNn1DPFLqXICIhHCwebIM0W"
 
 # Create credentials from the JSON info (since it's not a file)
