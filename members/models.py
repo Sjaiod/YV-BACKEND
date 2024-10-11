@@ -8,21 +8,25 @@ class Member(AbstractUser):
         ('admin', 'Administrator'),
         ('mod', 'Moderator'),
     ]
-    member_name=models.CharField(max_length=255,null=True, blank=False)
-    email=models.EmailField(blank=False)
+    
+    username = models.CharField(max_length=255, null=True, blank=False)
+    email = models.EmailField(blank=False, unique=True)
     dob = models.DateField(null=True, blank=True)
-    phone=models.CharField(max_length=15, null=True, blank=True)
-    nid = models.CharField(max_length=100, null=True, blank=True)  # NID/Passport number
-    role = models.CharField(max_length=5, choices=ROLE_CHOICES, default='gm')  # Role field with default 'gm'
-    facebook= models.URLField(max_length=255, blank=True)
+    phone = models.CharField(max_length=15, null=True, blank=True)
+    nid = models.CharField(max_length=100, null=True, blank=True)
+    role = models.CharField(max_length=5, choices=ROLE_CHOICES, default='gm')
+    facebook = models.URLField(max_length=255, blank=True)
     instagram = models.URLField(max_length=255, blank=True)
     gmail = models.EmailField(blank=True)
-    profile_pic = models.ImageField(upload_to='profile_pics/', blank=True)
-    availability = models.BooleanField(default=True)  # True = available, False = busy
+    profile_pic = models.CharField(max_length=255,null=True,default="profilepic", blank=True)  # Now storing the image ID as a string
+    availability = models.BooleanField(default=True)
 
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
 
     def __str__(self):
-        return self.email  # R
+        return self.email
+
 
     
 class MemberToken(models.Model):

@@ -1,48 +1,45 @@
 from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework import generics, permissions
-from .models import Member,MemberToken
-from .serializers import MemberSerializer,MemberINFOUPDATESerializer
-from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework import  permissions
+from .models import Member
+from .serializers import MemberSerializer,MemberINFOUPDATESerializer,MemberRegistrationSerializer
 from rest_framework.authtoken.models import Token
 from rest_framework import status
 from .serializers import MemberRegistrationSerializer,LoginSerializer
 from rest_framework.permissions import AllowAny,IsAuthenticated
 from django.contrib.auth import authenticate
+from rest_framework.parsers import MultiPartParser
+from utils.drive_uploader import upload_single_file_to_drive,check_image_exists,delete_image_from_drive
 
 # Create your views here.
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
+
     def post(self, request):
+        # Validate the input using the LoginSerializer
         serializer = LoginSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-        email=serializer.data['email']
-        password=serializer.data['password']
 
-        try:
-            user_obj = Member.objects.get(email=email)  # Get the user by email
-        except Member.DoesNotExist:
+        email = serializer.data['email']
+        password = serializer.data['password']
+
+        # Authenticate using the email and password
+        user_obj = authenticate(email=email, password=password)
+
+        if user_obj is None:
             return Response({"error": "Invalid email or password."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Authenticate using username (username field must be the email)
-        user_obj = authenticate(username=user_obj.username, password=password)
+        # Get or create token for the authenticated user
+        token, _ = Token.objects.get_or_create(user=user_obj)
 
-        if user_obj:
-            token, _ = Token.objects.get_or_create(user=user_obj)
-            return Response({'token': token.key ,"role":user_obj.role}, status=status.HTTP_200_OK)
-        else:
-            return Response({"error": "Invalid email or password."}, status=status.HTTP_400_BAD_REQUEST)
-
-
-            
-
-
-
-
+        # Return the token along with the user's role
+        return Response({
+            'token': token.key,
+            'role': user_obj.role,  # Send back profile picture (image ID)
+        }, status=status.HTTP_200_OK)
 
 
 class SetAvailabilityView(APIView):
@@ -57,14 +54,13 @@ class SetAvailabilityView(APIView):
 
 
 class RegisterMemberView(APIView):
-     permission_classes = [AllowAny]
-     def post(self, request):
+    permission_classes=[AllowAny]
+    def post(self, request):
         serializer = MemberRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({"message": serializer.data}, status=status.HTTP_201_CREATED)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-     
 
 class GETallMembersView(APIView):
     permission_classes = [IsAuthenticated]
@@ -141,4 +137,35 @@ class UpdateProfileView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class SingleImageUploadView(APIView):
+    permission_classes=[AllowAny]
+    parser_classes = [MultiPartParser]
+
+    def post(self, request, *args, **kwargs):
+       image=request.FILES.get('image')
+       pre_image=request.data.get("pre_image",None)
+       if not image:
+            return Response({"error": "No image file provided."}, status=400)
+       if pre_image:
+           
+           checkFileExist=check_image_exists(pre_image)
+           if not check_image_exists:
+               upload=upload_single_file_to_drive(image)
+               if upload:
+                   return Response({"id":upload},status=200)
+           else :
+               delfile=delete_image_from_drive(pre_image)
+               if delfile:
+                    upload=upload_single_file_to_drive(image)
+               if upload:
+                   return Response({"id":upload},status=200)
+               
+       else:
+            upload=upload_single_file_to_drive(image)
+            if upload:
+                   return Response({"id":upload},status=200)
+                   
+               
+
      

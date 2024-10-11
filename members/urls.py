@@ -1,7 +1,7 @@
 # member/urls.py
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .views import UpdateProfileView,SetAvailabilityView,RegisterMemberView,LoginView,GETallMembersView,MemberInfoView,RoleViewAPI,SearchUserView
+from .views import UpdateProfileView,SetAvailabilityView,RegisterMemberView,LoginView,GETallMembersView,MemberInfoView,RoleViewAPI,SearchUserView,SingleImageUploadView
 
 urlpatterns = [
     path('login/',LoginView.as_view(), name='login'),
@@ -12,7 +12,6 @@ urlpatterns = [
     path('memberinfo/', MemberInfoView.as_view(), name="MemberInfoView"),
     path('role/', RoleViewAPI.as_view(), name="RoleView"),
     path('search/', SearchUserView.as_view(), name='search-user'),
-     path('profile/update/', UpdateProfileView.as_view(), name='update-profile'),
-
-
+    path('profile/update/', UpdateProfileView.as_view(), name='update-profile'),
+    path("imageupload/",SingleImageUploadView.as_view(),name="image-upload")
 ]

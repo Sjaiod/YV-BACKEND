@@ -6,19 +6,47 @@ from django.contrib.auth import get_user_model
 
 
 
+class MemberRegistrationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Member
+        fields = ['email', 'password', 'dob', 'phone', 'nid', 'role', 'facebook', 'instagram', 'gmail', 'profile_pic']
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'email': {'required': True, 'allow_blank': False, 'error_messages': {'blank': 'Email is required.'}},
+        }
+
+    def create(self, validated_data):
+        # Ensure the email is unique
+        if Member.objects.filter(email=validated_data['email']).exists():
+            raise serializers.ValidationError({"email": "A user with this email already exists."})
+
+        # Create the user instance with the provided profile_pic (which is now an image ID)
+        user = Member(
+            email=validated_data['email'],
+            dob=validated_data.get('dob'),
+            phone=validated_data.get('phone'),
+            nid=validated_data.get('nid'),
+            role=validated_data.get('role', 'gm'),
+            facebook=validated_data.get('facebook'),
+            instagram=validated_data.get('instagram'),
+            gmail=validated_data.get('gmail'),
+            profile_pic=validated_data.get('profile_pic'),  # Directly store the image ID
+        )
+        user.set_password(validated_data['password'])
+        user.save()
+
+        return user
 
 class MemberSerializer(serializers.ModelSerializer):
     class Meta:
         model = Member
-        fields = ['id', 'member_name','email', 'role','phone','facebook',
-            'instagram',
-            'gmail',]
-        def validate_role(self, value):
-            valid_roles = ['gm', 'admin', 'MOD']
-            if value not in valid_roles:
-             
-             raise serializers.ValidationError("Role must be 'gm', 'admin', or 'MOD'.")
-            return value
+        fields = ['id', 'member_name', 'email', 'role', 'phone', 'facebook', 'instagram', 'gmail']
+
+    def validate_role(self, value):
+        valid_roles = ['gm', 'admin', 'mod']  # Ensure 'mod' is in lowercase
+        if value not in valid_roles:
+            raise serializers.ValidationError("Role must be 'gm', 'admin', or 'mod'.")
+        return value
 
 class MemberINFOUPDATESerializer(serializers.ModelSerializer):
     class Meta:
@@ -38,28 +66,6 @@ class MemberINFOUPDATESerializer(serializers.ModelSerializer):
         ]
 
 
-class MemberRegistrationSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
-
-    class Meta:
-        model = Member
-        fields = ['username', 'email', 'password',"phone","nid","dob","role", 'facebook', 'instagram', 'gmail']
-
-    def create(self, validated_data):
-        user = Member.objects.create_user(
-            username=validated_data['username'],
-            email=validated_data['email'],
-            password=validated_data['password'],
-            role=validated_data['role'],  # Role of the user
-            facebook=validated_data['facebook'],
-            instagram=validated_data['instagram'],
-            phone=validated_data['phone'],
-            dob=validated_data['dob'],
-            nid=validated_data['nid'],  # NID/Passport number
-            gmail=validated_data['gmail']
-        )
-        return user
-    
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()

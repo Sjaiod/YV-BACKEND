@@ -145,11 +145,14 @@ SIMPLE_JWT = {
 AUTH_USER_MODEL = 'members.Member'
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "https://yv-test.netlify.app/"
-    # other domains if needed
+    "https://yv-test.netlify.app",
+    "http://localhost:3000",  # Remove any trailing slashes or paths
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
+AUTHENTICATION_BACKENDS = [
+    'members.backends.EmailBackend',  # Replace 'your_app_name' with the actual name of your app
+    'django.contrib.auth.backends.ModelBackend',  # Optional: Keep the default backend as a fallback
+]
 
 
