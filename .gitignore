@@ -2,9 +2,9 @@
 __pycache__/
 .env
 .vscode/
+/utils/service_account.json
 .idea/
 media/
 test.py
 db.sqlite3
-APIS.txt
-service_account.json
+.txt
