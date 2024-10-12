@@ -40,7 +40,7 @@ class MemberRegistrationSerializer(serializers.ModelSerializer):
 class MemberSerializer(serializers.ModelSerializer):
     class Meta:
         model = Member
-        fields = ['id', 'member_name', 'email', 'role', 'phone', 'facebook', 'instagram', 'gmail']
+        fields = ['id', 'username', 'email', 'role', 'phone', 'facebook', 'instagram',"profile_pic" ]
 
     def validate_role(self, value):
         valid_roles = ['gm', 'admin', 'mod']  # Ensure 'mod' is in lowercase
@@ -51,19 +51,7 @@ class MemberSerializer(serializers.ModelSerializer):
 class MemberINFOUPDATESerializer(serializers.ModelSerializer):
     class Meta:
         model = Member
-        fields = [
-            'member_name',
-            'email',
-            'dob',
-            'phone',
-            'nid',
-            'role',
-            'facebook',
-            'instagram',
-            'gmail',
-            'profile_pic',
-            'availability',
-        ]
+        fields = "__all__"
 
 
 

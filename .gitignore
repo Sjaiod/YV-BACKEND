@@ -3,7 +3,10 @@ __pycache__/
 .env
 .vscode/
 .idea/
+util/service_account.json
 media/
 test.py
 db.sqlite3
 .txt
+service_account.json
+utils/service_account.json
