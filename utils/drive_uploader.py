@@ -1,11 +1,12 @@
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from googleapiclient.http import MediaIoBaseUpload
-import os
+from datetime import datetime
 from decouple import config
 import base64
+import mimetypes
 import json
-
+import io
 
 encoded_creds = config('ENCODED_GOOGLE_CREDENTIALS')
 
@@ -20,7 +21,6 @@ drive_service = build('drive', 'v3', credentials=credentials)
 
 
 def authenticate():
-   ## creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
     creds = service_account.Credentials.from_service_account_info(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
     return creds
 
@@ -66,3 +66,41 @@ def delete_image_from_drive(image_id):
         print(f"Error deleting image: {e}")
         return False  # Failed to delete image
 
+def upload_multiple_files_to_drive(files):
+    creds = authenticate()
+    service = build('drive', 'v3', credentials=creds)
+    uploaded_files = []
+
+    for file in files:
+        # Read the file content
+        file.open()  # Make sure the file is opened before reading
+        file_content = file.read()  # Read file content in bytes
+
+        # Generate a unique file name based on the current timestamp
+        current_date = datetime.now().strftime('%Y%m%d%H%M%S')
+        file_name = f"{current_date}_{file.name}"
+
+        # Metadata for the file to be uploaded
+        file_metadata = {
+            'name': file_name,
+            'parents': [PARENT_FOLDER_ID],
+        }
+
+        # Create a file stream for uploading
+        file_stream = io.BytesIO(file_content)
+        media = MediaIoBaseUpload(file_stream, mimetype=file.content_type, resumable=True)
+
+        # Create the file in Google Drive
+        file_drive = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+
+        # Set the file's permissions to public
+        permission = {
+            'type': 'anyone',
+            'role': 'reader',
+        }
+        service.permissions().create(fileId=file_drive['id'], body=permission).execute()
+
+        # Get the public URL of the file
+        uploaded_files.append(file_drive['id'])
+
+    return uploaded_files

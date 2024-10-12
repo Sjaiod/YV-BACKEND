@@ -10,7 +10,7 @@ from .serializers import MemberRegistrationSerializer,LoginSerializer
 from rest_framework.permissions import AllowAny,IsAuthenticated
 from django.contrib.auth import authenticate
 from rest_framework.parsers import MultiPartParser
-from utils.drive_uploader import upload_single_file_to_drive,check_image_exists,delete_image_from_drive
+from utils.drive_uploader import upload_single_file_to_drive,check_image_exists,delete_image_from_drive,upload_multiple_files_to_drive
 
 # Create your views here.
 
@@ -167,5 +167,35 @@ class SingleImageUploadView(APIView):
                    return Response({"id":upload},status=200)
                    
                
+class DeleteSingleImageView(APIView):
+    permission_classes=[IsAuthenticated]
+    parser_classes = [MultiPartParser]
 
-     
+    def post(self, request, *args, **kwargs):
+        pre_image=request.data.get("pre_image")
+        if not pre_image:
+            return Response({"error": "No I mage ID provided."}, status=400)
+        else :
+            delfile=delete_image_from_drive(pre_image)
+            if not delfile:
+                return Response({"error":"Invalid image id "},status=401)
+            else:
+                return Response({"messege":"Image deleted"},status=200)
+            
+class UploadMultipleFIleVIEW(APIView):
+    permission_classes = [IsAuthenticated]  # User must be authenticated
+    parser_classes = [MultiPartParser]      # Parse multi-part data (like files)
+
+    def post(self, request, *args, **kwargs):
+        images = request.FILES.getlist('image')  # Get all uploaded images
+        
+        if not images:
+            return Response({"error": "No image files provided."}, status=400)
+        
+        # Call the upload function for each file
+        uploaded_images = upload_multiple_files_to_drive(images)
+        
+        if uploaded_images:
+            return Response({"images": uploaded_images}, status=200)
+        else:
+            return Response({"error": "File upload failed."}, status=500)
