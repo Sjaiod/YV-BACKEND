@@ -8,7 +8,7 @@ import datetime
 
 def create_new_volunteer_sheet():
     # Define the columns for the new volunteer sheet
-    columns = ["First Name", "Last Name", "Email", "Phone","Age","T-shirt Size" "Registration Date","Blood Group"]
+    columns = ["Name", "Email", "Phone","Age","T-shirt Size" "Registration Date","Blood Group"]
 
     # Create an empty DataFrame with the specified columns
     df = pd.DataFrame(columns=columns)

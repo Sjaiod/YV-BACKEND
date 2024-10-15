@@ -99,7 +99,7 @@ class BkassCallBackView(APIView):
                         response_data=response.json()
                         if(response_data):
 
-                           success_redirect_url=f"{config("FRONTEND_URL")}/youthvoice/volentier/success"
+                           success_redirect_url=f"{config('FRONTEND_URL')}/youthvoice/volentier/success"
                            return redirect(success_redirect_url)
                         else:
                             return Response({"Failed"},status=500)
@@ -107,3 +107,8 @@ class BkassCallBackView(APIView):
             else:
                 return Response({"error": "Payment execution failed"}, status=500)
             
+class CreateVolentierViwe(APIView):
+    permission_classes=[AllowAny]
+    def post(self,request):
+        data=request.data
+        return Response({"data":data},status=200)
