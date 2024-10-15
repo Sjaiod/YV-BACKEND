@@ -57,8 +57,10 @@ class BkashPaymentCreateView(APIView):
                 base_url = config("URL")
                 call_back_url = f"{base_url}/api/vol/payment/callback/?token={token}&name={data.get('name')}&email={data.get('email')}&phone={data.get('phone')}&bloodGroup={data.get('bloodGroup')}&age={data.get('age')}&tshirtSize={data.get('tshirtSize')}"
                 create_payment = bkash_create_payment(id=token, amount=data.get('amount'), callback_url=call_back_url)
+                create_payment = create_payment.replace(' ', '')
                 
                 if create_payment:
+                    print(create_payment)
                     return HttpResponseRedirect(create_payment)  # Redirect to the payment URL
                 else:
                     return Response({"error": "Faced some error"}, status=501)
