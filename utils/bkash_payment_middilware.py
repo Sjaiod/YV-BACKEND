@@ -3,7 +3,7 @@ from decouple import config
 import requests
 import random
 
-def bkash_genarate_token(id):
+def bkash_genarate_token():
     url = config("bkash_grant_token_url")
     payload = {
         "app_key": config("bkash_api_key"),

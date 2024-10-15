@@ -51,7 +51,8 @@ class BkashPaymentCreateView(APIView):
         if not data:
             return Response({"error": "NO DATA was provided"}, status=401)
         else:
-            token = bkash_genarate_token(id=data.get('id'))
+            token = bkash_genarate_token()
+
             if token:
                 base_url = config("URL")
                 call_back_url = f"{base_url}/api/vol/payment/callback/?token={token}&name={data.get('name')}&email={data.get('email')}&phone={data.get('phone')}&bloodGroup={data.get('bloodGroup')}&age={data.get('age')}&tshirtSize={data.get('tshirtSize')}"
