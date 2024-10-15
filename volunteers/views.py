@@ -1,7 +1,7 @@
 from rest_framework.response import Response
 from django.http import HttpResponseRedirect
 from rest_framework.views import APIView
-from .utils.volunteer_helpers import create_new_volunteer_sheet, stop_volunteer_intake
+from .utils.volunteer_helpers import create_new_volunteer_sheet, stop_volunteer_intake,append_to_volunteer_sheet
 from rest_framework.permissions import AllowAny,IsAuthenticated
 from .models import VolunteerIntakeStatus  # Import the model
 from django.shortcuts import redirect, render
@@ -9,6 +9,7 @@ from utils.bkash_payment_middilware import bkash_genarate_token ,bkash_create_pa
 from decouple import config
 import requests
 class StartVolunteerIntakeView(APIView):
+    permission_classes=[IsAuthenticated]
     def post(self, request):
         # Logic to start the intake and create a new sheet
         file_path = create_new_volunteer_sheet()
@@ -53,7 +54,7 @@ class BkashPaymentCreateView(APIView):
             token = bkash_genarate_token(id=data.get('id'))
             if token:
                 base_url = config("URL")
-                call_back_url = f"{base_url}/api/vol/payment/callback/?token={token}&name={data.get('name')}&email={data.get('email')}&phone={data.get('phone')}&bloodGroup={data.get('bloodGroup')}"
+                call_back_url = f"{base_url}/api/vol/payment/callback/?token={token}&name={data.get('name')}&email={data.get('email')}&phone={data.get('phone')}&bloodGroup={data.get('bloodGroup')}&age={data.get('age')}&tshirtSize={data.get('tshirtSize')}"
                 create_payment = bkash_create_payment(id=token, amount=data.get('amount'), callback_url=call_back_url)
                 
                 if create_payment:
@@ -73,6 +74,8 @@ class BkassCallBackView(APIView):
         name=request.query_params.get('name')
         email=request.query_params.get('email')
         phone=request.query_params.get('phone')
+        age=request.query_params.get('age')
+        tshirt_size=request.query_params.get('tshirtSize')
         blood_group=request.query_params.get('bloodGroup')
 
         if status in ["failure", "cancel"]:
@@ -93,7 +96,10 @@ class BkassCallBackView(APIView):
                         "name":name,
                         "email":email,
                         "phone":phone,
-                        "bloodGroup":blood_group
+                        "blood_group":blood_group,
+                        "payment_id":paymen_id,
+                         "age": age,
+                         "tshirt_size": tshirt_size,
                     })
                     if response:
                         response_data=response.json()
@@ -108,7 +114,26 @@ class BkassCallBackView(APIView):
                 return Response({"error": "Payment execution failed"}, status=500)
             
 class CreateVolentierViwe(APIView):
-    permission_classes=[AllowAny]
-    def post(self,request):
-        data=request.data
-        return Response({"data":data},status=200)
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        data = request.data
+
+        # Check if volunteer intake is currently open
+        intake_status = VolunteerIntakeStatus.objects.filter(is_open=True).first()
+        if not intake_status:
+            return Response({"error": "Volunteer intake is currently closed"}, status=400)
+
+        # Validate incoming data (Optional but recommended)
+        required_fields = ['name', 'email', 'phone', 'age', 'tshirt_size', 'blood_group', 'payment_id']
+        missing_fields = [field for field in required_fields if field not in data]
+        if missing_fields:
+            return Response({"error": f"Missing fields: {', '.join(missing_fields)}"}, status=400)
+
+        # Append the new volunteer data to the current volunteer Excel sheet
+        success = append_to_volunteer_sheet(data)
+        
+        if success:
+            return Response({"message": "Volunteer registered successfully", "data": data}, status=201)
+        else:
+            return Response({"error": "Failed to register volunteer"}, status=500)
