@@ -8,6 +8,7 @@ class Event(models.Model):
     to_date = models.DateTimeField()    # End date and time of the event
     place = models.CharField(max_length=255)
     participants = models.ManyToManyField(Member, related_name='events')  # Relationship to Member
+    images = models.JSONField(default=list)  # Field to store an array of image IDs
 
     def __str__(self):
         return self.name

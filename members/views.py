@@ -182,7 +182,7 @@ class DeleteSingleImageView(APIView):
             else:
                 return Response({"messege":"Image deleted"},status=200)
             
-class UploadMultipleFIleVIEW(APIView):
+class UploadMultipleFileVIEW(APIView):
     permission_classes = [IsAuthenticated]  # User must be authenticated
     parser_classes = [MultiPartParser]      # Parse multi-part data (like files)
 

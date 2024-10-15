@@ -9,6 +9,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/member/', include('members.urls')),
     path('api/', include('events.urls')),
+    path('api/vol/', include('volunteers.urls')),
 ]
 
 urlpatterns += staticfiles_urlpatterns()
