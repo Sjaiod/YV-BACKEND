@@ -43,24 +43,26 @@ class TokenGenarateView(APIView):
             return Response({"OK"},status=500)
 
 class BkashPaymentCreateView(APIView):
-    permission_classes=[AllowAny]
-    def post(self,request):
-        data=request.data
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        data = request.data
         if not data:
-            return Response({"error":"NO DATA was provided"},status=401)
+            return Response({"error": "NO DATA was provided"}, status=401)
         else:
-           token=bkash_genarate_token(id=data.get('id') )
-           if token:
-               base_url = config("URL")
-               call_back_url = f"{base_url}/api/vol/payment/callback/?token={token}&name={data.get("name")}&email={data.get("email")}&phone={data.get("phone")}&bloodGroup={data.get("bloodGroup")}"
-               create_payment = bkash_create_payment(id=token, amount=data.get('amount'), callback_url=call_back_url)
-               if create_payment:
-                   return redirect(create_payment)
-               else:
-                   return Response({"error":"Faced somne error"},status=501)
-           else:
-               return Response({"error":"Invalid Token"})
-        
+            token = bkash_genarate_token(id=data.get('id'))
+            if token:
+                base_url = config("URL")
+                call_back_url = f"{base_url}/api/vol/payment/callback/?token={token}&name={data.get('name')}&email={data.get('email')}&phone={data.get('phone')}&bloodGroup={data.get('bloodGroup')}"
+                create_payment = bkash_create_payment(id=token, amount=data.get('amount'), callback_url=call_back_url)
+                
+                if create_payment:
+                    return redirect(create_payment)  # Redirect to the payment URL
+                else:
+                    return Response({"error": "Faced some error"}, status=501)
+            else:
+                return Response({"error": "Invalid Token"})
+
 class BkassCallBackView(APIView):
     permission_classes = [AllowAny]
     def get(self,request):
