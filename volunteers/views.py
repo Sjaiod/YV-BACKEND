@@ -60,8 +60,7 @@ class BkashPaymentCreateView(APIView):
                 create_payment = create_payment.replace(' ', '')
                 
                 if create_payment:
-                    print(create_payment)
-                    return HttpResponseRedirect(create_payment)  # Redirect to the payment URL
+                    return Response({"url": create_payment}, status=200)
                 else:
                     return Response({"error": "Faced some error"}, status=501)
             else:
