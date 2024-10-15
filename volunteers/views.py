@@ -77,7 +77,7 @@ class BkassCallBackView(APIView):
 
         if status in ["failure", "cancel"]:
             # Redirecting to "/error" in case of failure or cancel status
-            error_redirect_url=f"{config("FRONTEND_URL")}/youthvoice/volentier/error"
+            error_redirect_url=f"{config('FRONTEND_URL')}/youthvoice/volentier/error"
             return redirect(error_redirect_url)
 
         elif status == "success":
