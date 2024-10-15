@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from .utils.volunteer_helpers import create_new_volunteer_sheet, stop_volunteer_intake,append_to_volunteer_sheet
 from rest_framework.permissions import AllowAny,IsAuthenticated
 from .models import VolunteerIntakeStatus  # Import the model
-from django.shortcuts import redirect, render
+from django.shortcuts import  render
 from utils.bkash_payment_middilware import bkash_genarate_token ,bkash_create_payment,bkash_execute_payment
 from decouple import config
 import requests
@@ -59,7 +59,7 @@ class BkashPaymentCreateView(APIView):
                 create_payment = bkash_create_payment(id=token, amount=data.get('amount'), callback_url=call_back_url)
                 
                 if create_payment:
-                    return redirect(create_payment)  # Redirect to the payment URL
+                    return HttpResponseRedirect(create_payment)  # Redirect to the payment URL
                 else:
                     return Response({"error": "Faced some error"}, status=501)
             else:
@@ -82,7 +82,7 @@ class BkassCallBackView(APIView):
         if status in ["failure", "cancel"]:
             # Redirecting to "/error" in case of failure or cancel status
             error_redirect_url=f"{config('FRONTEND_URL')}/youthvoice/volentier/error"
-            return redirect(error_redirect_url)
+            return HttpResponseRedirect(error_redirect_url)
 
         elif status == "success":
             # Call bkash_execute_payment using the token retrieved from the URL
@@ -107,7 +107,7 @@ class BkassCallBackView(APIView):
                         if(response_data):
 
                            success_redirect_url=f"{config('FRONTEND_URL')}/youthvoice/volentier/success"
-                           return redirect(success_redirect_url)
+                           return HttpResponseRedirect(success_redirect_url)
                         else:
                             return Response({"Failed"},status=500)
                 
