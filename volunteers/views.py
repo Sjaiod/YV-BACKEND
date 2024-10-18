@@ -48,14 +48,16 @@ class BkashPaymentCreateView(APIView):
 
     def post(self, request):
         data = request.data
+
         if not data:
             return Response({"error": "NO DATA was provided"}, status=401)
         else:
+            name=request.data.get("name").replace(" ","-")
             token = bkash_genarate_token()
 
             if token:
                 base_url = config("URL")
-                call_back_url = f"{base_url}/api/vol/payment/callback/?token={token}&name={data.get('name')}&email={data.get('email')}&phone={data.get('phone')}&bloodGroup={data.get('bloodGroup')}&age={data.get('age')}&tshirtSize={data.get('tshirtSize')}"
+                call_back_url = f"{base_url}/api/vol/payment/callback/?token={token}&name={name}&email={data.get('email')}&phone={data.get('phone')}&food={data.get('food')}&age={data.get('age')}&tshirt_size={data.get('tshirt_size')}"
                 create_payment = bkash_create_payment(id=token, amount=data.get('amount'), callback_url=call_back_url)
                 create_payment = create_payment.replace(' ', '')
                 
@@ -77,8 +79,8 @@ class BkassCallBackView(APIView):
         email=request.query_params.get('email')
         phone=request.query_params.get('phone')
         age=request.query_params.get('age')
-        tshirt_size=request.query_params.get('tshirtSize')
-        blood_group=request.query_params.get('bloodGroup')
+        tshirt_size=request.query_params.get('tshirt_size')
+        food=request.query_params.get('food')
 
         if status in ["failure", "cancel"]:
             # Redirecting to "/error" in case of failure or cancel status
@@ -91,15 +93,15 @@ class BkassCallBackView(APIView):
             
             if execute_payment_response:
                 exe_payment_status=execute_payment_response.get('statusCode')
-                paymen_id=execute_payment_response.get('paymentID')
+                trx_id=execute_payment_response.get('trxID')
                 if exe_payment_status == "0000":
                     base_url=config("URL")
                     response=requests.post(url=f"{base_url}/api/vol/create",json={
-                        "name":name,
+                        "name":name.replace("-"," "),
                         "email":email,
                         "phone":phone,
-                        "blood_group":blood_group,
-                        "payment_id":paymen_id,
+                        "food":food,
+                        "trx_id":trx_id,
                          "age": age,
                          "tshirt_size": tshirt_size,
                     })
@@ -127,7 +129,7 @@ class CreateVolentierViwe(APIView):
             return Response({"error": "Volunteer intake is currently closed"}, status=400)
 
         # Validate incoming data (Optional but recommended)
-        required_fields = ['name', 'email', 'phone', 'age', 'tshirt_size', 'blood_group', 'payment_id']
+        required_fields = ['name', 'email', 'phone', 'age', 'tshirt_size', 'food', 'trx_id']
         missing_fields = [field for field in required_fields if field not in data]
         if missing_fields:
             return Response({"error": f"Missing fields: {', '.join(missing_fields)}"}, status=400)

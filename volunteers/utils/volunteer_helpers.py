@@ -8,7 +8,7 @@ import openpyxl
 
 def create_new_volunteer_sheet():
     # Define the columns for the new volunteer sheet
-    columns = ["Name", "Email", "Phone", "Age", "T-shirt Size", "Registration Date", "Blood Group", "Payment ID"]
+    columns = ["Name", "Email", "Phone", "Age", "T-shirt Size", "Registration Date", "Food", "TRX ID"]
 
     # Create an empty DataFrame with the specified columns
     df = pd.DataFrame(columns=columns)
@@ -112,7 +112,7 @@ def append_to_volunteer_sheet(data):
 
         # If it's a new sheet (headers might be missing), add them
         if ws.max_row == 1:
-            headers = ["Name", "Email", "Phone", "Age", "T-shirt Size", "Registration Date", "Blood Group", "Payment ID"]
+            headers = ["Name", "Email", "Phone", "Age", "T-shirt Size", "Registration Date", "Food", "TRX ID"]
             ws.append(headers)
 
         # Append new volunteer data to the sheet
@@ -123,8 +123,8 @@ def append_to_volunteer_sheet(data):
             data.get('age'),
             data.get('tshirt_size'),
             current_time,  # Registration date
-            data.get('blood_group'),
-            data.get('payment_id')
+            data.get('food'),
+            data.get('trx_id')
         ]
 
         ws.append(new_row)
