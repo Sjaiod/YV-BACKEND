@@ -10,3 +10,4 @@ db.sqlite3
 .txt
 service_account.json
 utils/service_account.json
+test/

@@ -151,9 +151,4 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
-AUTHENTICATION_BACKENDS = [
-    'members.backends.EmailBackend',  # Replace 'your_app_name' with the actual name of your app
-    'django.contrib.auth.backends.ModelBackend',  # Optional: Keep the default backend as a fallback
-]
-
 
