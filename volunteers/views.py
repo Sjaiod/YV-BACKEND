@@ -3,33 +3,63 @@ from django.http import HttpResponseRedirect
 from rest_framework.views import APIView
 from .utils.volunteer_helpers import create_new_volunteer_sheet, stop_volunteer_intake,append_to_volunteer_sheet
 from rest_framework.permissions import AllowAny,IsAuthenticated
-from .models import VolunteerIntakeStatus  # Import the model
+from .models import VolunteerSeason # Import the model
 from django.shortcuts import  render
 from utils.bkash_payment_middilware import bkash_genarate_token ,bkash_create_payment,bkash_execute_payment
 from decouple import config
 import requests
 class StartVolunteerIntakeView(APIView):
-    permission_classes=[IsAuthenticated]
+    permission_classes = [IsAuthenticated]
+    
     def post(self, request):
-        # Logic to start the intake and create a new sheet
-        file_path = create_new_volunteer_sheet()
-        # Set intake status to open, updating or creating the entry
-        VolunteerIntakeStatus.objects.update_or_create(
-            is_open=True, 
-            defaults={'current_sheet_id': file_path}  # Update with the new file path
+        # Get event_name from the request data
+        event_name = request.data.get('event_name')
+        
+        if not event_name:
+            return Response({"error": "Event name is required"}, status=400)
+        
+        # Create a new sheet in Google Drive with the event_name and get the file ID
+        file_id = create_new_volunteer_sheet(event_name)
+        
+        # Create a new VolunteerSeason entry with intake status set to True
+        new_season = VolunteerSeason.objects.create(
+            event_name=event_name,
+            file_id=file_id,
+            intake_status=True  # Set the intake as open
         )
-        return Response({"message": "Volunteer intake started", "file_path": file_path})
+        
+        return Response({
+            "message": "Volunteer intake started",
+            "event_name": new_season.event_name,
+            "file_id": new_season.file_id
+        })
 
 class StopVolunteerIntakeView(APIView):
     def post(self, request):
-        # Logic to stop intake and upload to Google Drive
-        intake_status = VolunteerIntakeStatus.objects.filter(is_open=True).first()
-        if intake_status:
-            file_url = stop_volunteer_intake(intake_status.current_sheet_id)
-            intake_status.is_open = False
-            intake_status.save()
+        # Get the volunteer season ID from the request
+        volunteer_season_id = request.data.get('volunteer_season_id')
+
+        if not volunteer_season_id:
+            return Response({"error": "Volunteer season ID is required"}, status=400)
+
+        # Fetch the volunteer season by ID
+        try:
+            volunteer_season = VolunteerSeason.objects.get(id=volunteer_season_id)
+        except VolunteerSeason.DoesNotExist:
+            return Response({"error": "Volunteer season not found"}, status=404)
+
+        # Check if the intake is currently open
+        if volunteer_season.intake_status:
+            # Stop the volunteer intake by uploading the file to Google Drive
+            file_url = stop_volunteer_intake(volunteer_season.file_id)
+            
+            # Update the intake status to False
+            volunteer_season.intake_status = False
+            volunteer_season.save()
+
             return Response({"message": "Volunteer intake stopped", "file_url": file_url})
-        return Response({"error": "No active intake to stop"}, status=400)
+        else:
+            return Response({"error": "No active intake to stop"}, status=400)
     
 
 class TokenGenarateView(APIView):
@@ -84,7 +114,7 @@ class BkassCallBackView(APIView):
 
         if status in ["failure", "cancel"]:
             # Redirecting to "/error" in case of failure or cancel status
-            error_redirect_url=f"{config('FRONTEND_URL')}/youthvoice/volentier/error"
+            error_redirect_url=f"{config('FRONTEND_URL')}/youthvoice/volunteer/error"
             return HttpResponseRedirect(error_redirect_url)
 
         elif status == "success":
@@ -105,39 +135,36 @@ class BkassCallBackView(APIView):
                          "age": age,
                          "tshirt_size": tshirt_size,
                     })
-                    if response:
-                        response_data=response.json()
-                        if(response_data):
-
-                           success_redirect_url=f"{config('FRONTEND_URL')}/youthvoice/volentier/success"
-                           return HttpResponseRedirect(success_redirect_url)
-                        else:
-                            return Response({"Failed"},status=500)
+                    if response :
+                        return True
                 
             else:
                 return Response({"error": "Payment execution failed"}, status=500)
-            
 class CreateVolentierViwe(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
         data = request.data
 
-        # Check if volunteer intake is currently open
-        intake_status = VolunteerIntakeStatus.objects.filter(is_open=True).first()
-        if not intake_status:
+        # Check if the most recent volunteer season's intake status is open
+        latest_volunteer_season = VolunteerSeason.objects.order_by('-id').first()
+        if not latest_volunteer_season or not latest_volunteer_season.intake_status:
             return Response({"error": "Volunteer intake is currently closed"}, status=400)
 
-        # Validate incoming data (Optional but recommended)
+        # Validate incoming data (Recommended)
         required_fields = ['name', 'email', 'phone', 'age', 'tshirt_size', 'food', 'trx_id']
         missing_fields = [field for field in required_fields if field not in data]
         if missing_fields:
             return Response({"error": f"Missing fields: {', '.join(missing_fields)}"}, status=400)
 
-        # Append the new volunteer data to the current volunteer Excel sheet
-        success = append_to_volunteer_sheet(data)
-        
+        # Append the new volunteer data to the current Google Drive sheet using the file ID
+        file_id = latest_volunteer_season.file_id
+        success = append_to_volunteer_sheet(file_id, data)
+
         if success:
-            return Response({"message": "Volunteer registered successfully", "data": data}, status=201)
+            trx_id=data.get('trx_id')
+            name=data.get('name')
+            frontend_url = f"{config('FRONTEND_URL')}/youthvoice/volunteer/?trx_id={trx_id}&name={name}"
+            return HttpResponseRedirect(frontend_url)
         else:
             return Response({"error": "Failed to register volunteer"}, status=500)

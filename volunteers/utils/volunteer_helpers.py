@@ -5,43 +5,53 @@ from googleapiclient.http import MediaFileUpload
 from utils.drive_uploader import authenticate
 import datetime
 import openpyxl
+from googleapiclient.errors import HttpError
+from io import BytesIO
+from googleapiclient.http import MediaIoBaseUpload
 
-def create_new_volunteer_sheet():
-    # Define the columns for the new volunteer sheet
-    columns = ["Name", "Email", "Phone", "Age", "T-shirt Size", "Registration Date", "Food", "TRX ID"]
+def create_new_volunteer_sheet(event_name):
+        
+    try:
+        # Authenticate with Google Drive and Sheets APIs
+        creds = authenticate()
+        drive_service = build('drive', 'v3', credentials=creds)
+        sheets_service = build('sheets', 'v4', credentials=creds)
 
-    # Create an empty DataFrame with the specified columns
-    df = pd.DataFrame(columns=columns)
+        # Create the Google Sheets file with the specified name
+        file_metadata = {
+            'name': f'{event_name}_Volunteer_Sheet',
+            'mimeType': 'application/vnd.google-apps.spreadsheet',
+            'parents': ['1IBi1xdLWsfKY99ZsSBgoMeiFC6REvO_E']  # Replace with your folder ID
+        }
 
-    # Create a unique file name using the current timestamp
-    file_name = f'volunteers_{pd.Timestamp.now().strftime("%Y-%m-%d_%H-%M-%S")}.xlsx'
+        sheet_file = drive_service.files().create(body=file_metadata, fields='id').execute()
+        sheet_id = sheet_file['id']
+        
+        # Define headers for the new sheet
+        columns = ["Name", "Email", "Phone", "Age", "T-shirt Size", "Registration Date", "Food", "TRX ID"]
+        
+        # Write headers to the sheet
+        sheets_service.spreadsheets().values().update(
+            spreadsheetId=sheet_id,
+            range='Sheet1!A1',  # Assuming default sheet name is "Sheet1"
+            valueInputOption='RAW',
+            body={'values': [columns]}
+        ).execute()
 
-    # Define the directory where the file will be saved (e.g., a 'sheets' folder inside the 'volunteers' app)
-    sheets_dir = os.path.join(os.getcwd(), 'volunteers', 'sheets')
+        # Set file permissions to allow access
+        permissions = {
+            'type': 'anyone',  # For public access
+            'role': 'writer',  # 'writer' for write access
+        }
+        drive_service.permissions().create(fileId=sheet_id, body=permissions).execute()
 
-    # Create the directory if it doesn't exist
-    if not os.path.exists(sheets_dir):
-        os.makedirs(sheets_dir)
+        # Return the file ID for further operations
+        return sheet_id
 
-    # Save the new Excel file to the defined directory
-    file_path = os.path.join(sheets_dir, file_name)
-    df.to_excel(file_path, index=False)
-
-    # Path to the text file that will store the latest file name
-    path_file = os.path.join(sheets_dir, 'path.txt')
-
-    # Check if the path file exists
-    if os.path.exists(path_file):
-        # If the file exists, clear its contents
-        with open(path_file, 'w') as f:
-            f.write(file_name)
-    else:
-        # If the file doesn't exist, create it and write the file name
-        with open(path_file, 'w') as f:
-            f.write(file_name)
-
-    return file_name  # Return just the file name
-
+    except HttpError as e:
+        error_reason = e.error_details if hasattr(e, 'error_details') else str(e)
+        print(f"An error occurred: {error_reason}")
+        return None
 
 
 
@@ -78,7 +88,7 @@ def stop_volunteer_intake():
     # Set file permissions to public
     permission = {
         'type': 'anyone',
-        'role': 'reader',
+        'role': 'writer',
     }
     service.permissions().create(fileId=uploaded_file['id'], body=permission).execute()
 
@@ -87,52 +97,57 @@ def stop_volunteer_intake():
 
     return file_url
 
-# Function to append new volunteer data to the existing Excel sheet
-def append_to_volunteer_sheet(data):
+# Function to append new volunteer data to the existing Excel sheetfrom googleapiclient.discovery import build
+
+def append_to_volunteer_sheet(file_id, data):
     try:
+        # Authenticate and set up the Google Sheets API
+        creds = authenticate()
+        service = build('sheets', 'v4', credentials=creds)
+        
+        # Reference the Sheets service
+        sheet = service.spreadsheets()
+        
+        # Prepare headers and check if they need to be set
+        headers = ["Name", "Email", "Phone", "Age", "T-shirt Size", "Registration Date", "Food", "TRX ID"]
+        try:
+            # Attempt to read headers to see if they already exist
+            sheet.values().get(spreadsheetId=file_id, range='Sheet1!A1:H1').execute()
+        except HttpError:
+            # If header row does not exist, create it
+            sheet.values().update(
+                spreadsheetId=file_id,
+                range='Sheet1!A1',
+                valueInputOption='RAW',
+                body={'values': [headers]}
+            ).execute()
+        
+        # Prepare new row data
         current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        # Get the path of the Excel sheet from path.txt
-        sheets_dir = os.path.join(os.getcwd(), 'volunteers', 'sheets')
-        path_file = os.path.join(sheets_dir, 'path.txt')
-        
-        if not os.path.exists(path_file):
-            print("No active volunteer sheet found.")
-            return "No active volunteer sheet found."
-        
-        with open(path_file, 'r') as f:
-            file_name = f.read().strip()
-            print(file_name)
-
-        # Full path to the Excel file
-        file_path = os.path.join(sheets_dir, file_name)
-        
-        # Load the existing Excel sheet
-        wb = openpyxl.load_workbook(file_path)
-        ws = wb.active
-
-        # If it's a new sheet (headers might be missing), add them
-        if ws.max_row == 1:
-            headers = ["Name", "Email", "Phone", "Age", "T-shirt Size", "Registration Date", "Food", "TRX ID"]
-            ws.append(headers)
-
-        # Append new volunteer data to the sheet
         new_row = [
-            data.get('name'),
-            data.get('email'),
-            data.get('phone'),
-            data.get('age'),
-            data.get('tshirt_size'),
+            data.get('name', ''),
+            data.get('email', ''),
+            data.get('phone', ''),
+            data.get('age', ''),
+            data.get('tshirt_size', ''),
             current_time,  # Registration date
-            data.get('food'),
-            data.get('trx_id')
+            data.get('food', ''),
+            data.get('trx_id', '')
         ]
-
-        ws.append(new_row)
-
-        # Save the updated workbook
-        wb.save(file_path)
-
+        
+        # Append the new row of data
+        sheet.values().append(
+            spreadsheetId=file_id,
+            range='Sheet1',
+            valueInputOption='RAW',
+            insertDataOption='INSERT_ROWS',
+            body={'values': [new_row]}
+        ).execute()
+        
+        print("Data appended successfully.")
         return True
-    except Exception as e:
-        print(f"Error while appending to sheet: {e}")
+
+    except HttpError as e:
+        error_reason = e
+        print(f"An error occurred: {error_reason}")
         return False

@@ -32,7 +32,8 @@ INSTALLED_APPS = [
     'whitenoise.runserver_nostatic',
     'corsheaders',
     'events',
-    'volunteers'
+    'volunteers',
+    'donation'
       # your app
 
     
@@ -147,7 +148,8 @@ AUTH_USER_MODEL = 'members.Member'
 
 CORS_ALLOWED_ORIGINS = [
     "https://yv-test.netlify.app",
-    "http://localhost:3000",  # Remove any trailing slashes or paths
+    "http://localhost:3000",
+    "https://youthsvoice.netlify.app",  # Remove any trailing slashes or paths
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True

@@ -12,7 +12,7 @@ encoded_creds = config('ENCODED_GOOGLE_CREDENTIALS')
 
 # Decode the Base64 string back to bytes, then convert it to JSON
 decoded_creds = base64.b64decode(encoded_creds)
-SCOPES=['https://www.googleapis.com/auth/drive']
+SCOPES=['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/spreadsheets']
 SERVICE_ACCOUNT_FILE = json.loads(decoded_creds)
 
 PARENT_FOLDER_ID = "1TP3SO5vfcnNn1DPFLqXICIhHCwebIM0W"

@@ -10,6 +10,7 @@ urlpatterns = [
     path('api/member/', include('members.urls')),
     path('api/', include('events.urls')),
     path('api/vol/', include('volunteers.urls')),
+    ##path('api/donate/', include('donation.urls')),
 ]
 
 urlpatterns += staticfiles_urlpatterns()
