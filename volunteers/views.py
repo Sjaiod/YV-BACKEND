@@ -87,7 +87,7 @@ class BkashPaymentCreateView(APIView):
 
             if token:
                 base_url = config("URL")
-                call_back_url = f"{base_url}/api/vol/payment/callback/?token={token}&name={name}&email={data.get('email')}&phone={data.get('phone')}&food={data.get('food')}&age={data.get('age')}&tshirt_size={data.get('tshirt_size')}"
+                call_back_url = f"{base_url}/api/vol/payment/callback?token={token}&name={name}&email={data.get('email')}&phone={data.get('phone')}&food={data.get('food')}&age={data.get('age')}&tshirt_size={data.get('tshirt_size')}"
                 create_payment = bkash_create_payment(id=token, amount=data.get('amount'), callback_url=call_back_url)
                 create_payment = create_payment.replace(' ', '')
                 
@@ -100,46 +100,62 @@ class BkashPaymentCreateView(APIView):
 
 class BkassCallBackView(APIView):
     permission_classes = [AllowAny]
-    def get(self,request):
-     # Accessing the 'paymentID' and 'token' from the query parameters
+
+    def get(self, request):
+        # Accessing the query parameters
         payment_id = request.query_params.get('paymentID')
-        token = request.query_params.get('token')  # Retrieving the token passed in the URL
+        token = request.query_params.get('token')
         status = request.query_params.get('status')
-        name=request.query_params.get('name')
-        email=request.query_params.get('email')
-        phone=request.query_params.get('phone')
-        age=request.query_params.get('age')
-        tshirt_size=request.query_params.get('tshirt_size')
-        food=request.query_params.get('food')
+        name = request.query_params.get('name')
+        email = request.query_params.get('email')
+        phone = request.query_params.get('phone')
+        age = request.query_params.get('age')
+        tshirt_size = request.query_params.get('tshirt_size')
+        food = request.query_params.get('food')
 
         if status in ["failure", "cancel"]:
             # Redirecting to "/error" in case of failure or cancel status
-            error_redirect_url=f"{config('FRONTEND_URL')}/youthvoice/volunteer/error"
+            error_redirect_url = f"{config('FRONTEND_URL')}/youthvoice/volunteer/error"
             return HttpResponseRedirect(error_redirect_url)
 
         elif status == "success":
             # Call bkash_execute_payment using the token retrieved from the URL
             execute_payment_response = bkash_execute_payment(token, payment_id)
-            
+
             if execute_payment_response:
-                exe_payment_status=execute_payment_response.get('statusCode')
-                trx_id=execute_payment_response.get('trxID')
-                if exe_payment_status == "0000":
-                    base_url=config("URL")
-                    response=requests.post(url=f"{base_url}/api/vol/create",json={
-                        "name":name.replace("-"," "),
-                        "email":email,
-                        "phone":phone,
-                        "food":food,
-                        "trx_id":trx_id,
-                         "age": age,
-                         "tshirt_size": tshirt_size,
-                    })
-                    if response :
-                        return True
-                
+                exe_payment_status = execute_payment_response.get('statusMessage')
+                trx_id = execute_payment_response.get('trxID')
+                print(exe_payment_status)
+                if exe_payment_status == "Successful":
+                    base_url = config("URL")
+                    response = requests.post(
+                        url=f"{base_url}/api/vol/create/",
+                        json={
+                            "name": name.replace("-", " "),
+                            "email": email,
+                            "phone": phone,
+                            "food": food,
+                            "trx_id": trx_id,
+                            "age": age,
+                            "tshirt_size": tshirt_size,
+                        }
+                    )
+                    # Check for a successful response and JSON data presence
+                    if response and response.status_code == 200:
+                        res = response.json()
+                        frontend_url = res.get("url")
+                        if frontend_url:
+                            return HttpResponseRedirect(frontend_url)
+                        else:
+                            return Response({"error": "Frontend URL missing in response"}, status=500)
+                    else:
+                        return Response({"error": execute_payment_response}, status=response.status_code)
+                else:
+                    return Response({"error": execute_payment_response}, status=500)
             else:
-                return Response({"error": "Payment execution failed"}, status=500)
+                return Response({"error": "Payment execution response missing"}, status=500)
+        else:
+            return Response({"error": "Invalid status provided"}, status=400)
 class CreateVolentierViwe(APIView):
     permission_classes = [AllowAny]
 
@@ -163,8 +179,8 @@ class CreateVolentierViwe(APIView):
 
         if success:
             trx_id=data.get('trx_id')
-            name=data.get('name')
-            frontend_url = f"{config('FRONTEND_URL')}/youthvoice/volunteer/?trx_id={trx_id}&name={name}"
-            return HttpResponseRedirect(frontend_url)
+            name=data.get('name').replace(' ', '-')
+            frontend_url = f"{config('FRONTEND_URL')}/youthvoice/volunteer/success?trx_id={trx_id}&name={name}"
+            return Response({"url":frontend_url},status=200)
         else:
             return Response({"error": "Failed to register volunteer"}, status=500)
