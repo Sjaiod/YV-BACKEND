@@ -7,7 +7,10 @@ from .models import VolunteerSeason # Import the model
 from django.shortcuts import  render
 from utils.bkash_payment_middilware import bkash_genarate_token ,bkash_create_payment,bkash_execute_payment
 from decouple import config
+from django.shortcuts import render
+from django.views import View
 import requests
+from django.urls import reverse
 class StartVolunteerIntakeView(APIView):
     permission_classes = [IsAuthenticated]
     
@@ -102,7 +105,10 @@ class BkassCallBackView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        Response("Processeing ...")
+        # Redirect immediately to loading page
+        loading_redirect_url = reverse('loading')
+        HttpResponseRedirect(loading_redirect_url)
+
         # Accessing the query parameters
         payment_id = request.query_params.get('paymentID')
         token = request.query_params.get('token')
@@ -115,7 +121,7 @@ class BkassCallBackView(APIView):
         food = request.query_params.get('food')
 
         if status in ["failure", "cancel"]:
-            # Redirecting to "/error" in case of failure or cancel status
+            # Redirecting to error page if status is failure or cancel
             error_redirect_url = f"{config('FRONTEND_URL')}/youthvoice/volunteer/error"
             return HttpResponseRedirect(error_redirect_url)
 
@@ -127,8 +133,10 @@ class BkassCallBackView(APIView):
                 exe_payment_status = execute_payment_response.get('statusCode')
                 trx_id = execute_payment_response.get('trxID')
                 print(exe_payment_status)
+
                 if exe_payment_status == "0000":
-                    base_url = config("URL")
+                    # Successful payment; proceed with volunteer registration
+                    base_url = config('URL')
                     response = requests.post(
                         url=f"{base_url}/api/vol/create/",
                         json={
@@ -141,7 +149,8 @@ class BkassCallBackView(APIView):
                             "tshirt_size": tshirt_size,
                         }
                     )
-                    # Check for a successful response and JSON data presence
+
+                    # Redirect to success page if registration succeeds
                     if response and response.status_code == 200:
                         res = response.json()
                         frontend_url = res.get("url")
@@ -185,3 +194,8 @@ class CreateVolentierViwe(APIView):
             return Response({"url":frontend_url},status=200)
         else:
             return Response({"error": "Failed to register volunteer"}, status=500)
+
+
+class LoadingView(View):
+    def get(self, request):
+        return render(request, 'loading.html')
