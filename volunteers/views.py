@@ -123,10 +123,10 @@ class BkassCallBackView(APIView):
             execute_payment_response = bkash_execute_payment(token, payment_id)
 
             if execute_payment_response:
-                exe_payment_status = execute_payment_response.get('statusMessage')
+                exe_payment_status = execute_payment_response.get('statusCode')
                 trx_id = execute_payment_response.get('trxID')
                 print(exe_payment_status)
-                if exe_payment_status == "Successful":
+                if exe_payment_status == "0000":
                     base_url = config("URL")
                     response = requests.post(
                         url=f"{base_url}/api/vol/create/",
