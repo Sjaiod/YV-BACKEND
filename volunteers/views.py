@@ -102,6 +102,7 @@ class BkassCallBackView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
+        Response("Processeing ...")
         # Accessing the query parameters
         payment_id = request.query_params.get('paymentID')
         token = request.query_params.get('token')
