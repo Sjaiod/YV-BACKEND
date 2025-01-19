@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from rest_framework import  permissions
 from .models import Member
 from .serializers import MemberSerializer,MemberINFOUPDATESerializer,MemberRegistrationSerializer
-from rest_framework.authtoken.models import Token
+from rest_framework.authtoken.models import Token # type: ignore
 from rest_framework import status
 from .serializers import MemberRegistrationSerializer,LoginSerializer
 from rest_framework.permissions import AllowAny,IsAuthenticated
@@ -71,7 +71,7 @@ class GETallMembersView(APIView):
         return Response(serializer.data)
     
 class MemberInfoView(APIView):
-    permission_classes = [IsAuthenticated]  # Only allow authenticated users
+    permission_classes = [AllowAny]  # Only allow authenticated users
 
     def get(self, request):
         user = request.user  # Get the current user from the request
@@ -79,6 +79,7 @@ class MemberInfoView(APIView):
             'id': user.id,
             'email': user.email,
             'member_name': user.member_name,
+            'profile_pic': user.profile_pic,
             'dob': user.dob,
             'phone': user.phone,
             'nid': user.nid,
@@ -131,12 +132,46 @@ class UpdateProfileView(APIView):
     def put(self, request):
         user = request.user  # Get the current user
         serializer = MemberINFOUPDATESerializer(user, data=request.data, partial=True)  # Use partial=True to allow partial updates
+        print(serializer.is_valid())
 
         if serializer.is_valid():
             serializer.save()  # Save the updated data
             return Response(serializer.data, status=status.HTTP_200_OK)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class ProfileImageView(APIView):
+    permission_classes=[IsAuthenticated]
+    parser_classes = [MultiPartParser]
+
+    def post(self, request, *args, **kwargs):
+        image = request.FILES.get('image')
+        pre_image = request.data.get("pre_image", None)
+        user = request.user
+
+        # Validate if an image is provided
+        if not image:
+            return Response({"error": "No image file provided."}, status=400)
+
+        # Check if a previous image exists
+        if pre_image:
+            if check_image_exists(pre_image):
+                # Delete the previous image from the drive
+                delfile = delete_image_from_drive(pre_image)
+                if not delfile:
+                    return Response({"error": "Failed to delete the previous image."}, status=500)
+
+        # Upload the new image to the drive
+        upload = upload_single_file_to_drive(image)
+        if not upload:
+            return Response({"error": "Failed to upload the image."}, status=500)
+
+        # Update the `profile_pic` field of the user
+        user.profile_pic = upload
+        user.save()
+
+        return Response({"id": upload, "message": "Profile image updated successfully."}, status=200)
+                   
     
 class SingleImageUploadView(APIView):
     permission_classes=[AllowAny]
@@ -145,6 +180,7 @@ class SingleImageUploadView(APIView):
     def post(self, request, *args, **kwargs):
        image=request.FILES.get('image')
        pre_image=request.data.get("pre_image",None)
+
        if not image:
             return Response({"error": "No image file provided."}, status=400)
        if pre_image:

@@ -8,8 +8,8 @@ class Member(AbstractUser):
         ('admin', 'Administrator'),
         ('mod', 'Moderator'),
     ]
-    
-    username = models.CharField(max_length=255, null=True, blank=False)
+    username = None    
+    member_name = models.CharField(max_length=255, null=True, blank=False)
     email = models.EmailField(blank=False, unique=True)
     dob = models.DateField(null=True, blank=True)
     phone = models.CharField(max_length=15, null=True, blank=True)
@@ -26,22 +26,3 @@ class Member(AbstractUser):
 
     def __str__(self):
         return self.email
-
-
-    
-class MemberToken(models.Model):
-    key = models.CharField(max_length=40, primary_key=True)
-    user = models.OneToOneField(Member, related_name='member_auth_token', on_delete=models.CASCADE)
-    created = models.DateTimeField(auto_now_add=True)
-
-    def save(self, *args, **kwargs):
-        if not self.key:
-            self.key = Token.generate_key()
-        return super().save(*args, **kwargs)
-
-class Role(models.Model):
-    name = models.CharField(max_length=50)
-    description = models.TextField()
-
-    def __str__(self):
-        return self.name

@@ -106,8 +106,6 @@ class BkassCallBackView(APIView):
 
     def get(self, request):
         # Redirect immediately to loading page
-        loading_redirect_url = reverse('loading')
-        HttpResponseRedirect(loading_redirect_url)
 
         # Accessing the query parameters
         payment_id = request.query_params.get('paymentID')
@@ -119,6 +117,8 @@ class BkassCallBackView(APIView):
         age = request.query_params.get('age')
         tshirt_size = request.query_params.get('tshirt_size')
         food = request.query_params.get('food')
+
+        
 
         if status in ["failure", "cancel"]:
             # Redirecting to error page if status is failure or cancel
@@ -136,19 +136,24 @@ class BkassCallBackView(APIView):
 
                 if exe_payment_status == "0000":
                     # Successful payment; proceed with volunteer registration
+                    data={'name':name,'email':email}
                     base_url = config('URL')
-                    response = requests.post(
-                        url=f"{base_url}/api/vol/create/",
-                        json={
-                            "name": name.replace("-", " "),
-                            "email": email,
-                            "phone": phone,
-                            "food": food,
-                            "trx_id": trx_id,
-                            "age": age,
-                            "tshirt_size": tshirt_size,
-                        }
-                    )
+                    latest_volunteer_season = VolunteerSeason.objects.order_by('-id').first()
+                    if not latest_volunteer_season or not latest_volunteer_season.intake_status:
+                            return Response({"error": "Volunteer intake is currently closed"}, status=400)
+
+        # Validate incoming data (Recommended)
+                    required_fields = ['name', 'email', 'phone', 'age', 'tshirt_size', 'food', 'trx_id']
+                    file_id = latest_volunteer_season.file_id
+                    success = append_to_volunteer_sheet(file_id, data)
+
+                    if success:
+                        trx_id=data.get('trx_id')
+                        name=data.get('name').replace(' ', '-')
+                        frontend_url = f"{config('FRONTEND_URL')}/youthvoice/volunteer/success?trx_id={trx_id}&name={name}"
+                        return Response({"url":frontend_url},status=200)
+                    else:
+                        return Response({"error": "Failed to register volunteer"}, status=500)
 
                     # Redirect to success page if registration succeeds
                     if response and response.status_code == 200:

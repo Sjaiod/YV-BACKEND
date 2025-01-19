@@ -6,10 +6,11 @@ from django.contrib.auth import get_user_model
 
 
 
+
 class MemberRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Member
-        fields = ['email', 'password', 'dob', 'phone', 'nid', 'role', 'facebook', 'instagram', 'gmail', 'profile_pic']
+        fields = ['email','member_name', 'password', 'dob', 'phone', 'nid', 'role', 'facebook', 'instagram', 'gmail', 'profile_pic']
         extra_kwargs = {
             'password': {'write_only': True},
             'email': {'required': True, 'allow_blank': False, 'error_messages': {'blank': 'Email is required.'}},
@@ -22,7 +23,9 @@ class MemberRegistrationSerializer(serializers.ModelSerializer):
 
         # Create the user instance with the provided profile_pic (which is now an image ID)
         user = Member(
+            
             email=validated_data['email'],
+            member_name=validated_data.get('member_name'),
             dob=validated_data.get('dob'),
             phone=validated_data.get('phone'),
             nid=validated_data.get('nid'),
@@ -40,7 +43,7 @@ class MemberRegistrationSerializer(serializers.ModelSerializer):
 class MemberSerializer(serializers.ModelSerializer):
     class Meta:
         model = Member
-        fields = ['id', 'username', 'email', 'role', 'phone', 'facebook', 'instagram',"profile_pic" ]
+        fields = ['id', 'member_name', 'email', 'role', 'phone', 'facebook', 'instagram',"profile_pic" ]
 
     def validate_role(self, value):
         valid_roles = ['gm', 'admin', 'mod']  # Ensure 'mod' is in lowercase
